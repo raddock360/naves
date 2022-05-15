@@ -1,0 +1,2 @@
+.globl sys_render_allEntities
+.globl sys_render_init
