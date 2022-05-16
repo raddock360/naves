@@ -1,3 +1,4 @@
+.include "sys/physics.h.s"
 .include "man/entities.h.s"
 .include "cpctelera.h.s"
 .include "cpcteleraFunctions.h.s"
@@ -59,20 +60,38 @@ _Not_pressed:
 ;; DESTRUYE: 
 ;;
 sys_physics_updateOneEntity:
-        ld      a, e_x(ix)
-        add     e_vx(ix)
-        ld      e_x(ix), a
+        ld      a, e_x(ix)      ; Cargamos en A el valor de e_x
+        add     e_vx(ix)        ; le sumamos e_vx
+_left_border:
+        cp      #LEFT_BORDER
+        jr      nz, _right_border
+                sub     e_vx(ix)
+                jr      _act_ex
+_right_border:
+        add     e_w(ix)
+        cp      #RIGHT_BORDER
+        jr      nz, _continue
+                sub     e_vx(ix)
+_continue:
+        sub     e_w(ix)
+_act_ex:
+        ld      e_x(ix), a      ; y lo volvemos a cargar en la entidad
 
-        ld      a, e_y(ix)
-        add     e_vy(ix)
-        ld      e_y(ix), a
+        ld      a, e_y(ix)      ; Repetimos el mismo proceso para la 
+        add     e_vy(ix)        ; coordenada e_y
+        ld      e_y(ix), a      ;\
 
-        ld      e_vx(ix), #0
-        ld      e_vy(ix), #0
+        ld      e_vx(ix), #0    ; Reseteamos ambas velocidades a 0
+        ld      e_vy(ix), #0    ;\
 
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Llama al mánager de entidades para que actualice las físicas de todas las
+;; entidades con el componente de físicas activo.
+;; OUTPUT:       A -> CMP_PHYSICS
+;;              HL -> Puntero a la rutina de actualización de físicas
+;; DESTRUYE:    AF, BC, DE, HL
 ;;
 sys_physics_updateAllEntities:
         ld       a, #CMP_PHYSICS

@@ -24,29 +24,37 @@ sys_render_oneEntity:
         ld       c, e_x(ix)                     ; C  = posición X de la entidad
         ld       b, e_y(ix)                     ; B  = posición Y de la entidad
         call    cpct_getScreenPtr_asm              ; Llamamos a la rutina 
+        
         ;; Comprobamos si la entidad ha cambiado de posición y es necesario render
-        ld       a, e_prevPtrLow(ix)    ; A = L(byte bajo del puntero)   
-        cp       l                      ; Si A != L es necesario renderizar
-        ret      z                      ; En caso contrario, regresamos sin renderizar
+        ;; comparando el puntero obtenido con el puntero anterior de la entidad
+        ld       a, e_prevPtrLow(ix)            ; A = L(byte bajo del puntero)   
+        cp       l                              ; Si A != L es necesario renderizar
+        jr      nz, _render_needed              ;\
+                ld      a, e_prevPtrHigh(ix)    ; A = H(byte alto del puntero)
+                cp      h                       ; Si A != H es necesario render
+                ret      z                      ; En caso contrario, regresamos sin renderizar
+        
+;; Renderizamos
+_render_needed:
         ld      (puntero_obtenido), hl
         
-        ;; Borramos la entidad de la posición anterior, excepto si es el primer render
+;; Borramos la entidad de la posición anterior, excepto si es el primer render
 if_first_render = . + 1
-        ld       a, #0                  ; El inicializador carga aquí un 1 en la primera ejecución.
-        cp      #1                      ; Por lo tanto, no se borra ningún sprite.
-        jr       z, first_render        ;\
-        ld       d, e_prevPtrHigh(ix)   ; DE = puntero anterior
-        ld       e, e_prevPtrLow(ix)    ; \
-        ld       c, e_h(ix)             ; C  = Alto de la entidad
-        ld       b, e_w(ix)             ; B  = Ancho de la entidad
-        ld       h, e_spriteHigh(ix)    ; HL = Puntero al sprite
-        ld       l, e_spriteLow(ix)     ; \
-        call    cpct_drawSpriteBlended_asm ; Llamamos rutina dibujado
+        ld       a, #0                          ; El inicializador carga aquí un 1 en la primera ejecución.
+        cp      #1                              ; Por lo tanto, no se borra ningún sprite.
+        jr       z, first_render                ;\
+        ld       d, e_prevPtrHigh(ix)           ; DE = puntero anterior
+        ld       e, e_prevPtrLow(ix)            ; \
+        ld       c, e_h(ix)                     ; C  = Alto de la entidad
+        ld       b, e_w(ix)                     ; B  = Ancho de la entidad
+        ld       h, e_spriteHigh(ix)            ; HL = Puntero al sprite
+        ld       l, e_spriteLow(ix)             ; \
+        call    cpct_drawSpriteBlended_asm      ; Llamamos rutina dibujado
 
-        ;; Modificamos la etiqueta (if_first_render) para que tenga un 0.
+;; Modificamos la etiqueta (if_first_render) para que tenga un 0.
 first_render:
-        ld      a, #0                   ; A = 0
-        ld      (if_first_render), a    ; if_first_render = A
+        ld      a, #0                           ; A = 0
+        ld      (if_first_render), a            ; if_first_render = A
 
         ;; Almacenamos el puntero obtenido mas arriba en la entidad. Para posterior borrado.
         puntero_obtenido = . + 1
@@ -55,12 +63,12 @@ first_render:
         ld      e_prevPtrHigh(ix), h
 
         ;; Dibujamos la entidad mezclándola con el fondo
-        ex      de, hl                  ; DE = Puntero a la posición de vídeo
-        ld       c, e_h(ix)             ; C  = Alto de la entidad
-        ld       b, e_w(ix)             ; B  = Ancho de la entidad
-        ld       h, e_spriteHigh(ix)    ; HL = Puntero al sprite
-        ld       l, e_spriteLow(ix)     ; \
-        call    cpct_drawSpriteBlended_asm ; Llamamos rutina dibujado
+        ex      de, hl                          ; DE = Puntero a la posición de vídeo
+        ld       c, e_h(ix)                     ; C  = Alto de la entidad
+        ld       b, e_w(ix)                     ; B  = Ancho de la entidad
+        ld       h, e_spriteHigh(ix)            ; HL = Puntero al sprite
+        ld       l, e_spriteLow(ix)             ; \
+        call    cpct_drawSpriteBlended_asm      ; Llamamos rutina dibujado
         
         ret
 
